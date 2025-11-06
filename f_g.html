@@ -63,6 +63,7 @@ header h1 {
 .btn-voltar {
   display: flex;
   justify-content: center;
+  margin-top: 20px;
 }
 
 .cta {
@@ -76,7 +77,10 @@ header h1 {
   transform: skewX(-15deg);
   border: none;
   cursor: pointer;
+  align-items: center;
+  gap: 10px;
 }
+
 .cta .span { transform: skewX(15deg); }
 .cta:hover { box-shadow: 10px 10px 0 black; }
 
@@ -147,7 +151,6 @@ textarea {
   resize: vertical;
 }
 
-
 .notas.card {
   width: 100%;
   max-width: 1200px;
@@ -193,7 +196,7 @@ textarea {
   .notas.card textarea { height: 180px; }
 }
 
-.pericias {
+.pericias, .combate {
   flex: 1 1 300px;
   background-color: var(--bg-panel);
   border: 1px solid var(--border-highlight);
@@ -205,24 +208,6 @@ textarea {
   align-items: center;
   text-align: center;
   transition: transform 0.3s;
-
-}
-
-.combate {
-  
-  flex: 1 1 300px;
-  background-color: var(--bg-panel);
-  border: 1px solid var(--border-highlight);
-  border-radius: 10px;
-  padding: 1rem;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  transition: transform 0.3s;
-
-
 }
 </style>
 </head>
@@ -230,7 +215,6 @@ textarea {
 <header class="cabecalho">
   <img src="Logo.png" alt="Logo Dragão" class="logo">
   <h1>Ficha de Personagem</h1>
-  
 </header>
 
 <main class="ficha-container">
@@ -310,6 +294,16 @@ textarea {
   </section>
 </main>
 
+<div class="btn-voltar">
+  <button class="cta" id="baixarPDF">
+    <span class="span"> Baixar Ficha em PDF</span>
+  </button>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script>
 const fichaId = localStorage.getItem("fichaSelecionadaId");
 const STORAGE_KEY = "ficha_" + fichaId;
@@ -337,6 +331,67 @@ function salvarFicha() {
   campos.forEach(input => dados[input.name] = input.value);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
 }
+
+document.getElementById("baixarPDF").addEventListener("click", async () => {
+  const { jsPDF } = window.jspdf;
+  const botao = document.getElementById("baixarPDF");
+  botao.disabled = true;
+  botao.innerText = "Gerando PDF...";
+
+  const canvas = await html2canvas(document.body, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#1a0d2e"
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  if (imgHeight <= pageHeight) {
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+  } else {
+    let position = 0;
+    let remainingHeight = imgHeight;
+    const sliceHeight = (canvas.height * pageHeight) / imgHeight;
+
+    while (remainingHeight > 0) {
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = sliceHeight;
+
+      const tempCtx = tempCanvas.getContext("2d");
+      tempCtx.drawImage(
+        canvas,
+        0,
+        position * (canvas.height / imgHeight),
+        canvas.width,
+        sliceHeight,
+        0,
+        0,
+        canvas.width,
+        sliceHeight
+      );
+
+      const tempImgData = tempCanvas.toDataURL("image/png");
+      if (position > 0) pdf.addPage();
+      pdf.addImage(tempImgData, "PNG", 0, 0, pageWidth, pageHeight);
+
+      position++;
+      remainingHeight -= pageHeight;
+    }
+  }
+
+  const nomeFicha = document.title || "ficha_personagem";
+  pdf.save(`${nomeFicha}.pdf`);
+
+  botao.disabled = false;
+  botao.innerHTML = "<span class='span'>📜 Baixar Ficha em PDF</span>";
+});
 </script>
 </body>
 </html>

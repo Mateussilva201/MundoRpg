@@ -21,7 +21,6 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  text-decoration: none;
 }
 
 body {
@@ -60,30 +59,6 @@ header h1 {
   text-align: center;
 }
 
-.btn-voltar {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.cta {
-  display: flex;
-  padding: 11px 33px;
-  font-size: 20px;
-  color: white;
-  background: #6225e6;
-  transition: 0.5s;
-  box-shadow: 6px 6px 0 black;
-  transform: skewX(-15deg);
-  border: none;
-  cursor: pointer;
-  align-items: center;
-  gap: 10px;
-}
-
-.cta .span { transform: skewX(15deg); }
-.cta:hover { box-shadow: 10px 10px 0 black; }
-
 main.ficha-container {
   display: flex;
   flex-direction: column;
@@ -101,8 +76,7 @@ main.ficha-container {
   width: 100%;
 }
 
-.card {
-  height: 500px;
+.card, .pericias, .combate {
   flex: 1 1 300px;
   background-color: var(--bg-panel);
   border: 1px solid var(--border-highlight);
@@ -114,16 +88,16 @@ main.ficha-container {
   align-items: center;
   text-align: center;
   transition: transform 0.3s;
+  height: auto;
 }
 .card:hover { transform: translateY(-3px); }
 
-.card h2 {
+.card h2, .pericias h2, .combate h2 {
   color: var(--accent-purple);
   border-bottom: 1px solid var(--border-highlight);
   padding-bottom: 4px;
   margin-bottom: 10px;
   width: 100%;
-  text-align: center;
 }
 
 label {
@@ -147,67 +121,56 @@ input, textarea {
 }
 
 textarea {
-  height: 150px;
   resize: vertical;
+  min-height: 120px;
 }
 
 .notas.card {
   width: 100%;
   max-width: 1200px;
-  height: auto;
 }
 
-.notas.card textarea {
-  height: 300px;
-  min-height: 250px;
+.btn-voltar {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0;
 }
 
-@media (max-width: 1200px) {
-  main.ficha-container { max-width: 1000px; }
-  .notas.card textarea { height: 280px; }
+.cta {
+  display: flex;
+  padding: 12px 30px;
+  font-size: 18px;
+  color: white;
+  background: #6225e6;
+  transition: 0.3s;
+  box-shadow: 6px 6px 0 black;
+  transform: skewX(-15deg);
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
 }
+.cta:hover { box-shadow: 10px 10px 0 black; }
+
 
 @media (max-width: 900px) {
-  header h1 { font-size: 1.8rem; }
-  .card { flex: 1 1 90%; }
-  textarea { height: 130px; }
-  .notas.card textarea { height: 250px; }
+  header h1 { font-size: 1.7rem; }
+  .linha, .trio { flex-direction: column; align-items: stretch; }
+  .card, .pericias, .combate { width: 100%; }
 }
 
-@media (max-width: 700px) {
-  header .logo { width: 60px; }
-  .cta { font-size: 16px; padding: 8px 20px; }
-  .card { padding: 0.8rem; }
-  .notas.card textarea { height: 230px; }
-}
-
-@media (max-width: 500px) {
-  header h1 { font-size: 1.5rem; }
+@media (max-width: 600px) {
+  header .logo { width: 55px; }
+  .cta { font-size: 16px; padding: 10px 22px; }
+  input, textarea { font-size: 0.95rem; }
   body { padding: 0.5rem; }
-  .cta { font-size: 14px; }
-  textarea { height: 110px; }
-  .notas.card textarea { height: 200px; }
 }
 
-@media (max-width: 380px) {
-  header .logo { width: 50px; }
-  header h1 { font-size: 1.2rem; }
+@media (max-width: 400px) {
+  header h1 { font-size: 1.3rem; }
+  .cta { font-size: 14px; padding: 8px 18px; }
   input, textarea { font-size: 0.9rem; }
-  .notas.card textarea { height: 180px; }
-}
-
-.pericias, .combate {
-  flex: 1 1 300px;
-  background-color: var(--bg-panel);
-  border: 1px solid var(--border-highlight);
-  border-radius: 10px;
-  padding: 1rem;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  transition: transform 0.3s;
 }
 </style>
 </head>
@@ -296,11 +259,11 @@ textarea {
 
 <div class="btn-voltar">
   <button class="cta" id="baixarPDF">
-    <span class="span"> Baixar Ficha em PDF</span>
+     Baixar Ficha em PDF
   </button>
 </div>
 
-
+<!-- libs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -352,45 +315,19 @@ document.getElementById("baixarPDF").addEventListener("click", async () => {
   const imgWidth = pageWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  if (imgHeight <= pageHeight) {
-    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-  } else {
-    let position = 0;
-    let remainingHeight = imgHeight;
-    const sliceHeight = (canvas.height * pageHeight) / imgHeight;
-
-    while (remainingHeight > 0) {
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = sliceHeight;
-
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCtx.drawImage(
-        canvas,
-        0,
-        position * (canvas.height / imgHeight),
-        canvas.width,
-        sliceHeight,
-        0,
-        0,
-        canvas.width,
-        sliceHeight
-      );
-
-      const tempImgData = tempCanvas.toDataURL("image/png");
-      if (position > 0) pdf.addPage();
-      pdf.addImage(tempImgData, "PNG", 0, 0, pageWidth, pageHeight);
-
-      position++;
-      remainingHeight -= pageHeight;
-    }
+  let position = 0;
+  while (position < imgHeight) {
+    const sliceHeight = Math.min(pageHeight, imgHeight - position);
+    pdf.addImage(imgData, "PNG", 0, -position, imgWidth, imgHeight);
+    position += pageHeight;
+    if (position < imgHeight) pdf.addPage();
   }
 
   const nomeFicha = document.title || "ficha_personagem";
   pdf.save(`${nomeFicha}.pdf`);
 
   botao.disabled = false;
-  botao.innerHTML = "<span class='span'>📜 Baixar Ficha em PDF</span>";
+  botao.innerText = " Baixar Ficha em PDF";
 });
 </script>
 </body>
